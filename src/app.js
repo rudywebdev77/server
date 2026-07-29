@@ -1,0 +1,96 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
+import path from 'path';
+import fs from 'fs';
+import { UPLOAD_PATH } from './config/env.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
+import requestRoutes from './routes/requestRoutes.js';
+import projectRoutes from './routes/projectRoutes.js';
+import messageRoutes from './routes/messageRoutes.js';
+import fileRoutes from './routes/fileRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import historyRoutes from './routes/historyRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
+
+const app = express();
+
+// Security Middlewares
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Allow loading local uploads
+}));
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true,
+}));
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Simple XSS Clean middleware (custom replacement for deprecated xss-clean if necessary, or just basic sanitization)
+app.use((req, res, next) => {
+  if (req.body) {
+    const sanitize = (obj) => {
+      for (let key in obj) {
+        if (typeof obj[key] === 'string') {
+          obj[key] = obj[key].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+          sanitize(obj[key]);
+        }
+      }
+    };
+    sanitize(req.body);
+  }
+  next();
+});
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // limit each IP to 1000 requests per windowMs
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
+});
+app.use('/api', limiter);
+
+// Ensure upload directory exists
+if (!fs.existsSync(UPLOAD_PATH)) {
+  fs.mkdirSync(UPLOAD_PATH, { recursive: true });
+}
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(UPLOAD_PATH));
+
+// Basic health check route
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', time: new Date() });
+});
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/requests', requestRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/files', fileRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/history', historyRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/reports', reportRoutes);
+
+// Base API route placeholder
+app.get('/api', (req, res) => {
+  res.json({ message: 'Welcome to Work Portal API' });
+});
+
+// Centralized error handling middleware will be added at the end of routing chain
+// We will register routing next, for now just register the error handler
+app.use(errorHandler);
+
+export default app;
