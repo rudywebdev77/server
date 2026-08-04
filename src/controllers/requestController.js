@@ -105,11 +105,12 @@ export const getRequests = async (req, res, next) => {
     }
 
     // Search query
-    if (search) {
+    if (search && search.trim()) {
+      const cleanSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { requestNo: { $regex: search, $options: 'i' } },
-        { service: { $regex: search, $options: 'i' } },
+        { title: { $regex: cleanSearch, $options: 'i' } },
+        { requestNo: { $regex: cleanSearch, $options: 'i' } },
+        { service: { $regex: cleanSearch, $options: 'i' } },
       ];
     }
 

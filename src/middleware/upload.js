@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 // File filter (Optional validation, can be customized depending on endpoint)
 const fileFilter = (req, file, cb) => {
   // Allow all general file uploads: pdf, images, zip, docx, etc.
-  const allowedExtensions = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|txt|zip|rar/;
+  const allowedExtensions = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|txt|zip|rar|webm|mp3|wav|ogg|m4a|aac|mp4|mov|avi|mkv/;
   const extname = allowedExtensions.test(
     path.extname(file.originalname).toLowerCase()
   );

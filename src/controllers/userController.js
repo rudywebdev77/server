@@ -1,16 +1,19 @@
 import User from '../models/User.js';
 
-// @desc    Get all users (with search, filter, pagination)
+// @desc    Get all users (with search, filter, pagination) - ALWAYS EXCLUDES ADMIN
 // @route   GET /api/users
 // @access  Private/Admin
 export const getUsers = async (req, res, next) => {
   try {
     const { role, search, status, page = 1, limit = 10 } = req.query;
 
-    const query = {};
+    // Strict base query excluding admin accounts completely
+    const query = {
+      role: { $ne: 'admin' },
+    };
 
-    // Filter by role
-    if (role) {
+    // Filter by allowed role ('staff' or 'client')
+    if (role && (role === 'staff' || role === 'client')) {
       query.role = role;
     }
 
@@ -20,15 +23,16 @@ export const getUsers = async (req, res, next) => {
     }
 
     // Search query (name or email)
-    if (search) {
+    if (search && search.trim()) {
+      const cleanSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { fullName: { $regex: cleanSearch, $options: 'i' } },
+        { email: { $regex: cleanSearch, $options: 'i' } },
       ];
     }
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
     const skip = (pageNum - 1) * limitNum;
 
     const total = await User.countDocuments(query);
@@ -43,7 +47,7 @@ export const getUsers = async (req, res, next) => {
       pagination: {
         total,
         page: pageNum,
-        pages: Math.ceil(total / limitNum),
+        pages: Math.ceil(total / limitNum) || 1,
       },
       users,
     });
@@ -52,15 +56,18 @@ export const getUsers = async (req, res, next) => {
   }
 };
 
-// @desc    Get single user
+// @desc    Get single user - EXCLUDES ADMIN
 // @route   GET /api/users/:id
 // @access  Private/Admin
 export const getUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({ _id: req.params.id, role: { $ne: 'admin' } });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found or Administrator account cannot be managed from User Management',
+      });
     }
 
     res.status(200).json({
@@ -72,12 +79,19 @@ export const getUser = async (req, res, next) => {
   }
 };
 
-// @desc    Create user (Admin Flow)
+// @desc    Create user (Staff & Clients only)
 // @route   POST /api/users
 // @access  Private/Admin
 export const createUser = async (req, res, next) => {
   try {
     const { fullName, email, phone, password, role, status } = req.body;
+
+    if (role === 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot create Administrator accounts from User Management. Only Staff and Clients are permitted.',
+      });
+    }
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -94,7 +108,7 @@ export const createUser = async (req, res, next) => {
       email,
       phone,
       password,
-      role,
+      role: role === 'staff' ? 'staff' : 'client',
       status: status || 'active',
       profileImage,
       createdBy: req.user._id,
@@ -110,16 +124,26 @@ export const createUser = async (req, res, next) => {
   }
 };
 
-// @desc    Update user details
+// @desc    Update user details - EXCLUDES ADMIN
 // @route   PUT /api/users/:id
 // @access  Private/Admin
 export const updateUser = async (req, res, next) => {
   try {
     const { fullName, email, phone, role, status, password } = req.body;
 
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({ _id: req.params.id, role: { $ne: 'admin' } });
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found or Administrator accounts cannot be modified from User Management',
+      });
+    }
+
+    if (role === 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot elevate account to Administrator role from User Management',
+      });
     }
 
     // Check if email already in use by another user
@@ -133,7 +157,7 @@ export const updateUser = async (req, res, next) => {
 
     if (fullName) user.fullName = fullName;
     if (phone !== undefined) user.phone = phone;
-    if (role) user.role = role;
+    if (role && (role === 'staff' || role === 'client')) user.role = role;
     if (status) user.status = status;
 
     if (req.file) {
@@ -157,7 +181,7 @@ export const updateUser = async (req, res, next) => {
   }
 };
 
-// @desc    Toggle user active status
+// @desc    Toggle user active status - EXCLUDES ADMIN
 // @route   PATCH /api/users/:id/status
 // @access  Private/Admin
 export const toggleUserStatus = async (req, res, next) => {
@@ -168,40 +192,39 @@ export const toggleUserStatus = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid status value' });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true, runValidators: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+    const userToToggle = await User.findOne({ _id: req.params.id, role: { $ne: 'admin' } });
+    if (!userToToggle) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found or Administrator status cannot be modified from User Management',
+      });
     }
+
+    userToToggle.status = status;
+    await userToToggle.save();
 
     res.status(200).json({
       success: true,
       message: `User status changed to ${status}`,
-      user,
+      user: userToToggle,
     });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Delete user
+// @desc    Delete user - EXCLUDES ADMIN
 // @route   DELETE /api/users/:id
 // @access  Private/Admin
 export const deleteUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({ _id: req.params.id, role: { $ne: 'admin' } });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    // Prevent Admin deleting themselves
-    if (user._id.toString() === req.user._id.toString()) {
-      return res.status(400).json({ success: false, message: 'You cannot delete your own admin account' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found or Administrator accounts cannot be deleted from User Management',
+      });
     }
 
     await user.deleteOne();

@@ -43,12 +43,93 @@ const UserSchema = new mongoose.Schema(
       enum: ['active', 'inactive', 'deactivated'],
       default: 'active',
     },
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+    },
     refreshToken: {
       type: String,
       select: false,
     },
     resetPasswordToken: String,
     resetPasswordExpires: Date,
+    otpCode: String,
+    otpExpires: Date,
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
+    otpResends: {
+      type: Number,
+      default: 0,
+    },
+    otpLastSentAt: Date,
+    resetPasswordVerified: {
+      type: Boolean,
+      default: false,
+    },
+    username: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    lastPasswordChange: {
+      type: Date,
+      default: null,
+    },
+    lastLogin: {
+      type: Date,
+      default: Date.now,
+    },
+    preferences: {
+      theme: {
+        type: String,
+        enum: ['dark', 'light'],
+        default: 'dark',
+      },
+      language: {
+        type: String,
+        default: 'English',
+      },
+      timezone: {
+        type: String,
+        default: 'UTC (GMT+00:00)',
+      },
+      dateFormat: {
+        type: String,
+        default: 'YYYY-MM-DD',
+      },
+    },
+    notifications: {
+      email: {
+        type: Boolean,
+        default: true,
+      },
+      browser: {
+        type: Boolean,
+        default: true,
+      },
+      projects: {
+        type: Boolean,
+        default: true,
+      },
+      security: {
+        type: Boolean,
+        default: true,
+      },
+      messages: {
+        type: Boolean,
+        default: true,
+      },
+      tasks: {
+        type: Boolean,
+        default: true,
+      },
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -62,10 +143,11 @@ const UserSchema = new mongoose.Schema(
 // Encrypt password using bcrypt
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 // Match user entered password to hashed password in database

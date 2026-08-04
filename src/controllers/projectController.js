@@ -114,10 +114,11 @@ export const getProjects = async (req, res, next) => {
     }
 
     if (status) query.status = status;
-    if (search) {
+    if (search && search.trim()) {
+      const cleanSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { projectName: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { projectName: { $regex: cleanSearch, $options: 'i' } },
+        { description: { $regex: cleanSearch, $options: 'i' } },
       ];
     }
 

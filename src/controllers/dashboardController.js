@@ -83,9 +83,13 @@ export const getStaffStats = async (req, res, next) => {
       status: 'under_review',
     });
 
+    const completedTasks = await Project.countDocuments({
+      assignedStaff: staffId,
+      status: 'completed',
+    });
+
     // Upcoming deadlines
     const upcomingDeadlines = await Project.find({
-      assignedStaff: staffId,
       status: { $nin: ['completed', 'cancelled'] },
       deadline: { $gte: new Date() },
     })
@@ -112,6 +116,7 @@ export const getStaffStats = async (req, res, next) => {
         newAssignments,
         pendingTasks,
         waitingForReview,
+        completedTasks,
       },
       upcomingDeadlines,
       recentActivity,
@@ -149,6 +154,13 @@ export const getClientStats = async (req, res, next) => {
     const myProjects = await Project.find({ client: clientId }).select('_id');
     const projectIds = myProjects.map((p) => p._id);
 
+    // Unread chat messages for client's projects
+    const unreadMessages = await Message.countDocuments({
+      project: { $in: projectIds },
+      sender: { $ne: clientId },
+      isRead: false,
+    });
+
     // Available files count
     const totalFiles = await File.countDocuments({
       $or: [
@@ -178,6 +190,7 @@ export const getClientStats = async (req, res, next) => {
         completedProjects,
         pendingResponses,
         totalFiles,
+        unreadMessages,
       },
       recentActivity,
     });

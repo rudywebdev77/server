@@ -73,6 +73,10 @@ export const login = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    // Update lastLogin timestamp
+    user.lastLogin = new Date();
+    await user.save();
+
     // Send token response
     await sendTokenResponse(user, 200, res);
   } catch (error) {
@@ -153,75 +157,241 @@ export const getMe = async (req, res, next) => {
   }
 };
 
-// @desc    Forgot Password
+import CompanySettings from '../models/CompanySettings.js';
+import { sendEmail } from '../utils/sendEmail.js';
+
+// @desc    Forgot Password - Generate and Send OTP via SMTP
 // @route   POST /api/auth/forgot-password
 // @access  Public
 export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'There is no user with that email' });
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Please provide a registered email address.' });
     }
 
-    // Generate token
-    const resetToken = crypto.randomBytes(20).toString('hex');
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
 
-    // Hash token and set to resetPasswordToken field
-    user.resetPasswordToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'This account does not exist.' });
+    }
 
-    // Set expire
-    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    // Check 60-second resend cooldown
+    if (user.otpLastSentAt) {
+      const secondsSinceLastSent = Math.floor((Date.now() - new Date(user.otpLastSentAt).getTime()) / 1000);
+      if (secondsSinceLastSent < 60) {
+        const remaining = 60 - secondsSinceLastSent;
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${remaining} seconds before requesting a new verification code.`,
+        });
+      }
+    }
+
+    // Check maximum resend attempts (5)
+    if (user.otpResends >= 5 && user.otpExpires && new Date(user.otpExpires).getTime() > Date.now()) {
+      return res.status(429).json({
+        success: false,
+        message: 'Maximum resend attempts reached. Please try again after 10 minutes.',
+      });
+    }
+
+    // Generate secure 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Set OTP fields
+    user.otpCode = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
+    user.otpAttempts = 0;
+    user.otpResends = (user.otpResends || 0) + 1;
+    user.otpLastSentAt = new Date();
+    user.resetPasswordVerified = false;
 
     await user.save();
 
-    // Since we don't have active SMTP configuration, simulate sending reset link by logging to console
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
-    console.log(`\n=== PASSWORD RESET SIMULATION ===\nTo: ${email}\nReset Link: ${resetUrl}\n=================================\n`);
+    // Fetch company name for template
+    const company = await CompanySettings.findOne();
+    const companyName = company?.companyName || 'Work Portal';
+
+    const subject = 'Password Reset Verification Code';
+    const textBody = `Hello ${user.fullName || 'User'},\n\nYou requested to reset your password.\n\nYour verification code is:\n\n${otp}\n\nThis code is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.\n\nRegards,\n${companyName}`;
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <h2 style="color: #4f46e5; margin-bottom: 16px;">Password Reset Verification Code</h2>
+        <p>Hello <strong>${user.fullName || 'User'}</strong>,</p>
+        <p>You requested to reset your password for your Work Portal account.</p>
+        
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; text-align: center; margin: 24px 0; border: 1px solid #e2e8f0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4f46e5;">${otp}</span>
+          <p style="font-size: 12px; color: #64748b; margin-top: 8px; margin-bottom: 0;">Valid for 10 minutes</p>
+        </div>
+
+        <p style="font-size: 13px; color: #64748b;">If you did not request a password reset, please ignore this email or contact support.</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #94a3b8; margin: 0;">Regards,<br /><strong>${companyName}</strong></p>
+      </div>
+    `;
+
+    // Dispatch email using configured Administrator SMTP settings
+    await sendEmail({
+      to: user.email,
+      subject,
+      text: textBody,
+      html: htmlBody,
+    });
 
     res.status(200).json({
       success: true,
-      message: 'Password reset link simulated. Check the server console log for the link.',
-      resetToken // Sending resetToken to client for development convenience
+      message: 'Verification code sent to your email address.',
     });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Reset Password
-// @route   POST /api/auth/reset-password/:token
+// @desc    Verify 6-Digit OTP Code
+// @route   POST /api/auth/verify-otp
 // @access  Public
-export const resetPassword = async (req, res, next) => {
+export const verifyOtp = async (req, res, next) => {
   try {
-    // Get hashed token
-    const resetPasswordToken = crypto
-      .createHash('sha256')
-      .update(req.params.token)
-      .digest('hex');
+    const { email, otp } = req.body;
 
-    const user = await User.findOne({
-      resetPasswordToken,
-      resetPasswordExpires: { $gt: Date.now() },
-    });
-
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Please provide email and verification code.' });
     }
 
-    // Set new password
-    user.password = req.body.password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'This account does not exist.' });
+    }
+
+    // Check attempts limit (max 5)
+    if (user.otpAttempts >= 5) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many failed verification attempts. Please request a new verification code.',
+      });
+    }
+
+    // Check expiration
+    if (!user.otpExpires || new Date(user.otpExpires).getTime() < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code has expired. Please request a new one.',
+      });
+    }
+
+    // Check OTP match
+    if (user.otpCode !== otp.toString().trim()) {
+      user.otpAttempts = (user.otpAttempts || 0) + 1;
+      await user.save();
+      return res.status(400).json({ success: false, message: 'Invalid verification code.' });
+    }
+
+    // OTP Validated successfully
+    user.resetPasswordVerified = true;
+    user.otpAttempts = 0;
     await user.save();
 
     res.status(200).json({
       success: true,
-      message: 'Password reset successful',
+      message: 'Verification successful. Please create your new password.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Reset Password with New Password & Send Confirmation Email
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Please provide email and new password.' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'This account does not exist.' });
+    }
+
+    // Check if OTP was verified
+    if (!user.resetPasswordVerified && user.otpCode !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Unauthorized password reset attempt. Please verify OTP first.',
+      });
+    }
+
+    // Password Complexity Rules:
+    // Minimum 8 characters, at least 1 uppercase, 1 lowercase, 1 number, 1 special character
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one uppercase letter.' });
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one lowercase letter.' });
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one number.' });
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one special character.' });
+    }
+
+    // Update password (pre-save hook hashes with bcrypt)
+    user.password = newPassword;
+    user.otpCode = undefined;
+    user.otpExpires = undefined;
+    user.otpAttempts = 0;
+    user.otpResends = 0;
+    user.resetPasswordVerified = false;
+    user.refreshToken = undefined;
+    user.lastPasswordChange = new Date();
+
+    await user.save();
+
+    // Fetch company name for template
+    const company = await CompanySettings.findOne();
+    const companyName = company?.companyName || 'Work Portal';
+
+    const subject = 'Password Changed Successfully';
+    const textBody = `Hello ${user.fullName || 'User'},\n\nYour password has been changed successfully.\n\nIf you did not perform this action, please contact your Administrator immediately.\n\nRegards,\n${companyName}`;
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <h2 style="color: #16a34a; margin-bottom: 16px;">Password Changed Successfully</h2>
+        <p>Hello <strong>${user.fullName || 'User'}</strong>,</p>
+        <p>Your password for your Work Portal account has been changed successfully.</p>
+        
+        <div style="background-color: #f0fdf4; padding: 16px; border-left: 4px solid #16a34a; margin: 20px 0; border-radius: 4px;">
+          <p style="margin: 0; font-size: 13px; color: #15803d; font-weight: bold;">If you did not perform this action, please contact your Administrator immediately.</p>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #94a3b8; margin: 0;">Regards,<br /><strong>${companyName}</strong></p>
+      </div>
+    `;
+
+    // Dispatch Confirmation Email using configured Administrator SMTP
+    try {
+      await sendEmail({
+        to: user.email,
+        subject,
+        text: textBody,
+        html: htmlBody,
+      });
+    } catch (mailErr) {
+      console.error('Confirmation email send error:', mailErr.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully. Please log in with your new password.',
     });
   } catch (error) {
     next(error);

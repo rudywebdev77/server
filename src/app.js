@@ -7,6 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import { UPLOAD_PATH } from './config/env.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { activityLoggerMiddleware } from './middleware/activityLogger.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
@@ -18,6 +19,12 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import historyRoutes from './routes/historyRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import activityRoutes from './routes/activityRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import clientSettingsRoutes from './routes/clientSettingsRoutes.js';
+import staffSettingsRoutes from './routes/staffSettingsRoutes.js';
+import companyRoutes from './routes/companyRoutes.js';
+import emailRoutes from './routes/emailRoutes.js';
 
 const app = express();
 
@@ -32,6 +39,9 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Automatic activity logging — fires after successful responses
+app.use(activityLoggerMiddleware);
 
 // Simple XSS Clean middleware (custom replacement for deprecated xss-clean if necessary, or just basic sanitization)
 app.use((req, res, next) => {
@@ -83,6 +93,13 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/admin/email-settings', emailRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/client', clientSettingsRoutes);
+app.use('/api/staff', staffSettingsRoutes);
+app.use('/api/company', companyRoutes);
+
+
 
 // Base API route placeholder
 app.get('/api', (req, res) => {
