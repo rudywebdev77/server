@@ -31,8 +31,12 @@ export const connectDB = async () => {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      socketTimeoutMS: 45000,
     };
+
 
     const attemptConnect = async (usePublicDns = false) => {
       if (usePublicDns) {
