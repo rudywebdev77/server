@@ -63,12 +63,23 @@ export const getEmailTransporter = async () => {
 export const sendEmail = async ({ to, subject, html, text }) => {
   const { transporter, senderName, senderEmail, replyToEmail } = await getEmailTransporter();
 
+  // Clean and format sender display
+  const cleanSenderName = (senderName || 'WODWES LLC').replace(/"/g, '');
+  const fromHeader = `"${cleanSenderName}" <${senderEmail}>`;
+
   const mailOptions = {
-    from: `"${senderName}" <${senderEmail}>`,
+    from: fromHeader,
     to,
     subject,
-    text,
+    text: text || html.replace(/<[^>]+>/g, ''), // Provide clean plain-text fallback for anti-spam alignment
     html,
+    headers: {
+      'X-Priority': '1 (Highest)',
+      'X-MSMail-Priority': 'High',
+      'Importance': 'High',
+      'X-Mailer': 'WODWES System Mailer v1.0',
+      'Auto-Submitted': 'auto-generated',
+    },
   };
 
   if (replyToEmail) {
@@ -78,3 +89,4 @@ export const sendEmail = async ({ to, subject, html, text }) => {
   const info = await transporter.sendMail(mailOptions);
   return info;
 };
+
