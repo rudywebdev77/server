@@ -83,14 +83,18 @@ app.use((req, res, next) => {
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // limit each IP to 1000 requests per windowMs
+  validate: { xForwardedForHeader: false }, // Prevent ERL_UNEXPECTED_X_FORWARDED_FOR validation error on Vercel
   message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
 });
 app.use('/api', limiter);
+
 
 // Ensure upload directory exists
 if (!fs.existsSync(UPLOAD_PATH)) {
   fs.mkdirSync(UPLOAD_PATH, { recursive: true });
 }
+
+import mongoose from 'mongoose';
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(UPLOAD_PATH));
@@ -99,6 +103,28 @@ app.use('/uploads', express.static(UPLOAD_PATH));
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', time: new Date() });
 });
+
+// Database status check route
+app.get('/api/db-status', (req, res) => {
+  try {
+    const readyState = mongoose.connection.readyState;
+    const states = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting',
+    };
+    res.status(200).json({
+      success: true,
+      readyState,
+      status: states[readyState] || 'unknown',
+      hasMongoUri: !!process.env.MONGO_URI,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 // Routes
 app.use('/api/auth', authRoutes);
