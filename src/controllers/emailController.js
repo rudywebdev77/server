@@ -1,6 +1,8 @@
 import EmailSettings from '../models/EmailSettings.js';
 import CompanySettings from '../models/CompanySettings.js';
+import User from '../models/User.js';
 import { sendEmail } from '../utils/sendEmail.js';
+
 
 // Get Current Email Settings (Admin Only)
 export const getEmailSettings = async (req, res, next) => {
@@ -249,12 +251,26 @@ export const sendTestEmail = async (req, res, next) => {
     // Fetch company name for template
     const company = await CompanySettings.findOne();
     const companyName = company?.companyName || 'WODWES LLC';
-    const adminName = req.user?.fullName ? `Hello ${req.user.fullName},` : 'Hello Admin,';
+    
+    // Look up recipient name dynamically by email
+    const cleanRecipientEmail = String(testEmailRecipient).toLowerCase().trim();
+    const recipientUser = await User.findOne({ email: cleanRecipientEmail });
+
+    let recipientName = recipientUser?.fullName;
+    if (!recipientName && req.user?.email?.toLowerCase() === cleanRecipientEmail) {
+      recipientName = req.user.fullName;
+    }
+    if (!recipientName) {
+      const emailPrefix = cleanRecipientEmail.split('@')[0];
+      recipientName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+    }
+
+    const greeting = `Hello ${recipientName},`;
     const clientUrl = process.env.CLIENT_URL || 'https://client-hussnain5.vercel.app';
     const adminPortalUrl = `${clientUrl}/admin`;
 
     const subject = 'Email Configuration Verified';
-    const textBody = `${adminName}\n\nYour email configuration has been successfully verified.\n\nYour application is now able to send:\n• Password Reset Emails\n• Verification Emails\n• System Notifications\n• Client Messages\n\n✅ Email service is configured successfully.\n\nOrganization:\n${companyName}\n\nOpen Admin Portal: ${adminPortalUrl}\n\nNeed assistance?\nContact our support team: support@wodwes.com\n\n© 2026 WODWES LLC. All Rights Reserved.`;
+    const textBody = `${greeting}\n\nYour email configuration has been successfully verified.\n\n✅ Email service is configured successfully.\n\nOrganization:\n${companyName}\n\nNeed assistance?\nContact our support team: support@wodwes.com\n\n© 2026 WODWES LLC. All Rights Reserved.`;
 
     const htmlBody = `
 <!DOCTYPE html>
@@ -299,8 +315,9 @@ export const sendTestEmail = async (req, res, next) => {
               </h1>
               
               <p style="margin: 0 0 20px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
-                ${adminName}
+                ${greeting}
               </p>
+
 
               <p style="margin: 0 0 20px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
                 Your email configuration has been successfully verified.
