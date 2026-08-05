@@ -95,9 +95,12 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin/email-settings', emailRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/client/activity', activityRoutes);
+app.use('/api/activity', activityRoutes);
 app.use('/api/client', clientSettingsRoutes);
 app.use('/api/staff', staffSettingsRoutes);
 app.use('/api/company', companyRoutes);
+
 
 
 

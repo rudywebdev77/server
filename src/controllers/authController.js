@@ -397,3 +397,185 @@ export const resetPassword = async (req, res, next) => {
     next(error);
   }
 };
+
+// Helper: Send verification email to new address
+export const sendVerificationEmail = async ({ user, pendingEmail, token }) => {
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const verifyUrl = `${clientUrl}/verify-email?token=${token}`;
+  const company = await CompanySettings.findOne();
+  const companyName = company?.companyName || 'Work Portal';
+
+  const subject = 'Verify your new email address';
+  const textBody = `Hello ${user.fullName || 'User'},\n\nYou requested to change your account email address to ${pendingEmail}.\n\nPlease verify your new email address by visiting the link below:\n\n${verifyUrl}\n\nThis link will expire in 24 hours. Your current email remains active until verified.\n\nRegards,\n${companyName}`;
+
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+      <h2 style="color: #4f46e5; margin-bottom: 16px;">Verify Your New Email Address</h2>
+      <p>Hello <strong>${user.fullName || 'User'}</strong>,</p>
+      <p>You requested to update your email address to <strong>${pendingEmail}</strong>.</p>
+      <p>Please click the button below to verify your new email address and complete the update:</p>
+      
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${verifyUrl}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Verify Email Address</a>
+      </div>
+
+      <p style="font-size: 13px; color: #64748b;">Or copy and paste this URL into your web browser:</p>
+      <p style="font-size: 12px; color: #4f46e5; word-break: break-all;">${verifyUrl}</p>
+
+      <div style="background-color: #f8fafc; padding: 12px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+        <p style="margin: 0; font-size: 12px; color: #475569;">Note: Your active login email remains <strong>${user.email}</strong> until your new address is verified. This link expires in 24 hours.</p>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+      <p style="font-size: 12px; color: #94a3b8; margin: 0;">Regards,<br /><strong>${companyName}</strong></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: pendingEmail,
+    subject,
+    text: textBody,
+    html: htmlBody,
+  });
+};
+
+// @desc    Verify Email Address using token
+// @route   POST /api/auth/verify-email
+// @access  Public
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification token is required.',
+      });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+      emailVerificationExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token.',
+      });
+    }
+
+    if (!user.pendingEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending email change found for this account.',
+      });
+    }
+
+    const newEmail = user.pendingEmail.toLowerCase().trim();
+
+    // Check if new email was taken by another user while pending
+    const emailExists = await User.findOne({
+      email: newEmail,
+      _id: { $ne: user._id },
+    });
+
+    if (emailExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'This email address is already in use by another account.',
+      });
+    }
+
+    // Update email and reset pending fields
+    user.email = newEmail;
+    user.pendingEmail = undefined;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    user.emailVerified = true;
+
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select('-password');
+
+    res.status(200).json({
+      success: true,
+      message: 'Email address updated and verified successfully!',
+      user: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Resend Email Verification link to pending email
+// @route   POST /api/auth/resend-verification
+// @access  Private
+export const resendEmailVerification = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user || !user.pendingEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending email change request found.',
+      });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    user.emailVerificationToken = hashedToken;
+    user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await user.save();
+
+    await sendVerificationEmail({
+      user,
+      pendingEmail: user.pendingEmail,
+      token,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Verification email resent to ${user.pendingEmail}`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Cancel Pending Email Verification
+// @route   POST /api/auth/cancel-verification
+// @access  Private
+export const cancelEmailVerification = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    user.pendingEmail = undefined;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select('-password');
+
+    res.status(200).json({
+      success: true,
+      message: 'Pending email change cancelled',
+      user: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
