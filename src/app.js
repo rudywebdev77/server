@@ -25,8 +25,26 @@ import clientSettingsRoutes from './routes/clientSettingsRoutes.js';
 import staffSettingsRoutes from './routes/staffSettingsRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
+import { connectDB } from './config/db.js';
 
 const app = express();
+
+// Enable Trust Proxy for rate limiting behind reverse proxies (Vercel/Heroku/Nginx)
+app.set('trust proxy', 1);
+
+// Middleware to ensure DB connection is established (Required for Vercel Serverless Functions)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Database connection failed. Please check MONGO_URI environment variable.',
+    });
+  }
+});
 
 // Security Middlewares
 app.use(helmet({
@@ -42,6 +60,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Automatic activity logging — fires after successful responses
 app.use(activityLoggerMiddleware);
+
 
 // Simple XSS Clean middleware (custom replacement for deprecated xss-clean if necessary, or just basic sanitization)
 app.use((req, res, next) => {

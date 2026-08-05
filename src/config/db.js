@@ -1,14 +1,22 @@
 import mongoose from 'mongoose';
 import { MONGO_URI } from './env.js';
-import dns from "node:dns/promises";
-dns.setServers(["1.1.1.1"]);
+
+let isConnected = false;
 
 export const connectDB = async () => {
+  if (isConnected || mongoose.connection.readyState >= 1) {
+    isConnected = true;
+    return;
+  }
+
   try {
     const conn = await mongoose.connect(MONGO_URI);
+    isConnected = true;
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    return conn;
   } catch (error) {
-    console.error(`${error}`);
-    process.exit(1);
+    console.error(`MongoDB Connection Error: ${error.message}`);
+    throw error;
   }
 };
+
