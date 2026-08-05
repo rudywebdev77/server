@@ -123,8 +123,12 @@ if (!fs.existsSync(UPLOAD_PATH)) {
 
 import mongoose from 'mongoose';
 
-// Serve uploaded files statically
+import os from 'os';
+
+// Serve uploaded files statically (both local UPLOAD_PATH and serverless os.tmpdir())
 app.use('/uploads', express.static(UPLOAD_PATH));
+app.use('/uploads', express.static(os.tmpdir()));
+
 
 // Basic health check route
 app.get('/health', (req, res) => {
