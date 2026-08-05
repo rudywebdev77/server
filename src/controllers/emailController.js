@@ -384,18 +384,21 @@ export const sendTestEmail = async (req, res, next) => {
     `;
 
 
-    await sendEmail({
+    const info = await sendEmail({
       to: testEmailRecipient,
       subject,
       text: textBody,
       html: htmlBody,
     });
 
+    console.log(`[sendTestEmail SUCCESS] Delivered to ${testEmailRecipient} | SMTP Response: ${info.response} | MessageID: ${info.messageId}`);
+
     res.status(200).json({
       success: true,
-      message: `Test email sent successfully to ${testEmailRecipient}!`,
+      message: `Test email dispatched successfully to ${testEmailRecipient}! (SMTP 250 OK)`,
     });
   } catch (error) {
+
     console.error("Test email dispatch error:", error.message);
     let userMsg = error.message;
 
