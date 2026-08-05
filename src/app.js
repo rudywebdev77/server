@@ -61,12 +61,16 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
+import compression from 'compression';
+
 // 2. Security & Parser Middlewares
+app.use(compression());
 app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 app.use(cookieParser());
 app.use(express.json());
+
 
 // Middleware to ensure DB connection is ready for API requests
 app.use(async (req, res, next) => {
