@@ -25,9 +25,9 @@ import clientSettingsRoutes from './routes/clientSettingsRoutes.js';
 import staffSettingsRoutes from './routes/staffSettingsRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
-import { connectDB } from './config/db.js';
 
 const app = express();
+
 
 // Trust Proxy for Vercel / Heroku / Reverse proxies
 app.set('trust proxy', 1);

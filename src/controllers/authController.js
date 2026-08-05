@@ -58,10 +58,8 @@ export const login = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please provide an email and password' });
     }
 
-    // Ensure database connection is ready
-    await connectDB();
-
     // Auto-seed if database is empty
+
     try {
       const count = await User.countDocuments();
       if (count === 0) {
