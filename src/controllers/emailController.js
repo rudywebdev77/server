@@ -322,16 +322,17 @@ export const sendTestEmail = async (req, res, next) => {
                 Your email configuration has been successfully verified.
               </p>
 
-              <!-- Modern Success Alert -->
-              <div style="margin: 0 0 28px 0; background-color: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 16px 20px;">
+              <!-- Modern Purple Alert -->
+              <div style="margin: 0 0 28px 0; background-color: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 16px 20px;">
                 <table role="presentation" border="0" cellspacing="0" cellpadding="0">
                   <tr>
-                    <td style="font-size: 15px; font-weight: 600; color: #4ade80; line-height: 1.4;">
+                    <td style="font-size: 15px; font-weight: 600; color: #c084fc; line-height: 1.4;">
                       ✅ Email service is configured successfully.
                     </td>
                   </tr>
                 </table>
               </div>
+
 
               <!-- Organization Info Card -->
               <div style="margin: 0; background-color: #1a233a; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 16px 20px;">

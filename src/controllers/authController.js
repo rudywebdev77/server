@@ -224,21 +224,94 @@ export const forgotPassword = async (req, res, next) => {
     const subject = 'Password Reset Verification Code';
     const textBody = `Hello ${user.fullName || 'User'},\n\nYou requested to reset your password.\n\nYour verification code is:\n\n${otp}\n\nThis code is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.\n\nRegards,\n${companyName}`;
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <h2 style="color: #4f46e5; margin-bottom: 16px;">Password Reset Verification Code</h2>
-        <p>Hello <strong>${user.fullName || 'User'}</strong>,</p>
-        <p>You requested to reset your password for your Work Portal account.</p>
-        
-        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; text-align: center; margin: 24px 0; border: 1px solid #e2e8f0;">
-          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4f46e5;">${otp}</span>
-          <p style="font-size: 12px; color: #64748b; margin-top: 8px; margin-bottom: 0;">Valid for 10 minutes</p>
-        </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Reset Verification Code</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #090d16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #f1f5f9;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #090d16; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <!-- Container Card -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #131b2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);">
+          
+          <!-- Brand Header -->
+          <tr>
+            <td style="padding: 36px 36px 20px 36px; text-align: left;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">
+                    <span style="color: #a855f7;">WODWES</span> <span style="font-size: 13px; font-weight: 600; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase;">LLC</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-        <p style="font-size: 13px; color: #64748b;">If you did not request a password reset, please ignore this email or contact support.</p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #94a3b8; margin: 0;">Regards,<br /><strong>${companyName}</strong></p>
-      </div>
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 36px;">
+              <div style="border-top: 1px solid rgba(255, 255, 255, 0.08);"></div>
+            </td>
+          </tr>
+
+          <!-- Body Content -->
+          <tr>
+            <td style="padding: 32px 36px;">
+              <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.025em; line-height: 1.25;">
+                Password Reset Verification
+              </h1>
+              
+              <p style="margin: 0 0 20px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
+                Hello ${user.fullName || 'User'},
+              </p>
+
+              <p style="margin: 0 0 24px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
+                You requested to reset your account password. Please use the verification code below:
+              </p>
+
+              <!-- OTP Code Display Card -->
+              <div style="margin: 0 0 28px 0; background-color: #1a233a; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 14px; padding: 24px; text-align: center;">
+                <span style="font-size: 36px; font-weight: 800; letter-spacing: 10px; color: #c084fc; font-family: monospace;">${otp}</span>
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #94a3b8; font-weight: 500;">Valid for 10 minutes</p>
+              </div>
+
+              <!-- Security Notice -->
+              <div style="margin: 0; background-color: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 12px; padding: 16px 20px;">
+                <p style="margin: 0; font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+                  If you did not request a password reset, please ignore this email or contact support.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Subtle Divider -->
+          <tr>
+            <td style="padding: 0 36px;">
+              <div style="border-top: 1px solid rgba(255, 255, 255, 0.08);"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 36px 28px 36px; text-align: left;">
+              <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 500;">
+                © 2026 WODWES LLC. All Rights Reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
     `;
+
 
     // Dispatch email using configured Administrator SMTP settings
     await sendEmail({
@@ -371,18 +444,93 @@ export const resetPassword = async (req, res, next) => {
     const subject = 'Password Changed Successfully';
     const textBody = `Hello ${user.fullName || 'User'},\n\nYour password has been changed successfully.\n\nIf you did not perform this action, please contact your Administrator immediately.\n\nRegards,\n${companyName}`;
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <h2 style="color: #16a34a; margin-bottom: 16px;">Password Changed Successfully</h2>
-        <p>Hello <strong>${user.fullName || 'User'}</strong>,</p>
-        <p>Your password for your Work Portal account has been changed successfully.</p>
-        
-        <div style="background-color: #f0fdf4; padding: 16px; border-left: 4px solid #16a34a; margin: 20px 0; border-radius: 4px;">
-          <p style="margin: 0; font-size: 13px; color: #15803d; font-weight: bold;">If you did not perform this action, please contact your Administrator immediately.</p>
-        </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Changed Successfully</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #090d16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #f1f5f9;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #090d16; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <!-- Container Card -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #131b2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);">
+          
+          <!-- Brand Header -->
+          <tr>
+            <td style="padding: 36px 36px 20px 36px; text-align: left;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">
+                    <span style="color: #a855f7;">WODWES</span> <span style="font-size: 13px; font-weight: 600; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase;">LLC</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #94a3b8; margin: 0;">Regards,<br /><strong>${companyName}</strong></p>
-      </div>
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 36px;">
+              <div style="border-top: 1px solid rgba(255, 255, 255, 0.08);"></div>
+            </td>
+          </tr>
+
+          <!-- Body Content -->
+          <tr>
+            <td style="padding: 32px 36px;">
+              <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.025em; line-height: 1.25;">
+                Password Changed Successfully
+              </h1>
+              
+              <p style="margin: 0 0 20px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
+                Hello ${user.fullName || 'User'},
+              </p>
+
+              <p style="margin: 0 0 20px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
+                Your account password has been updated successfully.
+              </p>
+
+              <!-- Purple Alert Card -->
+              <div style="margin: 0 0 28px 0; background-color: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 16px 20px;">
+                <p style="margin: 0; font-size: 14px; font-weight: 600; color: #c084fc; line-height: 1.4;">
+                  ✅ Account password updated securely.
+                </p>
+              </div>
+
+              <!-- Security Notice -->
+              <div style="margin: 0; background-color: #1a233a; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 16px 20px;">
+                <p style="margin: 0; font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+                  If you did not perform this change, please contact your Administrator immediately.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Subtle Divider -->
+          <tr>
+            <td style="padding: 0 36px;">
+              <div style="border-top: 1px solid rgba(255, 255, 255, 0.08);"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 36px 28px 36px; text-align: left;">
+              <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 500;">
+                © 2026 WODWES LLC. All Rights Reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
     `;
 
     // Dispatch Confirmation Email using configured Administrator SMTP
@@ -411,33 +559,108 @@ export const sendVerificationEmail = async ({ user, pendingEmail, token }) => {
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
   const verifyUrl = `${clientUrl}/verify-email?token=${token}`;
   const company = await CompanySettings.findOne();
-  const companyName = company?.companyName || 'Work Portal';
+  const companyName = company?.companyName || 'WODWES LLC';
 
   const subject = 'Verify your new email address';
   const textBody = `Hello ${user.fullName || 'User'},\n\nYou requested to change your account email address to ${pendingEmail}.\n\nPlease verify your new email address by visiting the link below:\n\n${verifyUrl}\n\nThis link will expire in 24 hours. Your current email remains active until verified.\n\nRegards,\n${companyName}`;
 
   const htmlBody = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-      <h2 style="color: #4f46e5; margin-bottom: 16px;">Verify Your New Email Address</h2>
-      <p>Hello <strong>${user.fullName || 'User'}</strong>,</p>
-      <p>You requested to update your email address to <strong>${pendingEmail}</strong>.</p>
-      <p>Please click the button below to verify your new email address and complete the update:</p>
-      
-      <div style="text-align: center; margin: 32px 0;">
-        <a href="${verifyUrl}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Verify Email Address</a>
-      </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your New Email Address</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #090d16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #f1f5f9;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #090d16; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <!-- Container Card -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #131b2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);">
+          
+          <!-- Brand Header -->
+          <tr>
+            <td style="padding: 36px 36px 20px 36px; text-align: left;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">
+                    <span style="color: #a855f7;">WODWES</span> <span style="font-size: 13px; font-weight: 600; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase;">LLC</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-      <p style="font-size: 13px; color: #64748b;">Or copy and paste this URL into your web browser:</p>
-      <p style="font-size: 12px; color: #4f46e5; word-break: break-all;">${verifyUrl}</p>
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 36px;">
+              <div style="border-top: 1px solid rgba(255, 255, 255, 0.08);"></div>
+            </td>
+          </tr>
 
-      <div style="background-color: #f8fafc; padding: 12px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #3b82f6;">
-        <p style="margin: 0; font-size: 12px; color: #475569;">Note: Your active login email remains <strong>${user.email}</strong> until your new address is verified. This link expires in 24 hours.</p>
-      </div>
+          <!-- Body Content -->
+          <tr>
+            <td style="padding: 32px 36px;">
+              <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.025em; line-height: 1.25;">
+                Verify Your New Email Address
+              </h1>
+              
+              <p style="margin: 0 0 20px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
+                Hello ${user.fullName || 'User'},
+              </p>
 
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-      <p style="font-size: 12px; color: #94a3b8; margin: 0;">Regards,<br /><strong>${companyName}</strong></p>
-    </div>
-  `;
+              <p style="margin: 0 0 24px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
+                You requested to update your email address to <strong style="color: #ffffff;">${pendingEmail}</strong>.
+              </p>
+
+              <!-- Purple CTA Button -->
+              <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 0 28px 0;">
+                <tr>
+                  <td align="center" style="border-radius: 12px; background-color: #7c3aed;">
+                    <a href="${verifyUrl}" target="_blank" style="font-size: 15px; font-weight: 700; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; background-color: #7c3aed; border: 1px solid #8b5cf6;">
+                      Verify Email Address &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Link Fallback Card -->
+              <div style="margin: 0; background-color: #1a233a; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 16px 20px;">
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: #94a3b8; font-weight: 500;">
+                  Or copy and paste this link into your browser:
+                </p>
+                <p style="margin: 0; font-size: 12px; color: #c084fc; word-break: break-all; font-family: monospace;">
+                  ${verifyUrl}
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Subtle Divider -->
+          <tr>
+            <td style="padding: 0 36px;">
+              <div style="border-top: 1px solid rgba(255, 255, 255, 0.08);"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 36px 28px 36px; text-align: left;">
+              <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 500;">
+                © 2026 WODWES LLC. All Rights Reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
 
   await sendEmail({
     to: pendingEmail,
