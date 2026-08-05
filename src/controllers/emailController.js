@@ -285,7 +285,7 @@ export const sendTestEmail = async (req, res, next) => {
     <tr>
       <td align="center">
         <!-- Container Card -->
-        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 560px; background-color: #131b2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #131b2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);">
           
           <!-- Brand Header -->
           <tr>
@@ -318,7 +318,6 @@ export const sendTestEmail = async (req, res, next) => {
                 ${greeting}
               </p>
 
-
               <p style="margin: 0 0 20px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
                 Your email configuration has been successfully verified.
               </p>
@@ -346,7 +345,6 @@ export const sendTestEmail = async (req, res, next) => {
             </td>
           </tr>
 
-
           <!-- Subtle Divider -->
           <tr>
             <td style="padding: 0 36px;">
@@ -356,14 +354,8 @@ export const sendTestEmail = async (req, res, next) => {
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 28px 36px 36px 36px; text-align: left;">
-              <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #94a3b8;">
-                Need assistance?
-              </p>
-              <p style="margin: 0 0 20px 0; font-size: 13px; color: #64748b;">
-                Contact our support team: <a href="mailto:support@wodwes.com" style="color: #a855f7; text-decoration: none; font-weight: 600;">support@wodwes.com</a>
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #475569; font-weight: 500;">
+            <td style="padding: 24px 36px 28px 36px; text-align: left;">
+              <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 500;">
                 © 2026 WODWES LLC. All Rights Reserved.
               </p>
             </td>
@@ -376,6 +368,7 @@ export const sendTestEmail = async (req, res, next) => {
 </body>
 </html>
     `;
+
 
 
     const info = await sendEmail({
