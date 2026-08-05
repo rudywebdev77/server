@@ -3,7 +3,7 @@ import Request from '../models/Request.js';
 import Project from '../models/Project.js';
 import File from '../models/File.js';
 import Message from '../models/Message.js';
-import Activity from '../models/Activity.js';
+import ActivityLog from '../models/ActivityLog.js';
 
 // @desc    Get Admin Dashboard Stats
 // @route   GET /api/dashboard/admin
@@ -36,14 +36,15 @@ export const getAdminStats = async (req, res, next) => {
         .limit(5)
         .populate('client', 'fullName')
         .lean(),
-      Activity.find()
+      ActivityLog.find()
         .sort({ createdAt: -1 })
         .limit(10)
-        .populate('user_id', 'fullName role')
+        .populate('performedBy', 'fullName role')
         .populate('project', 'projectName')
         .populate('request', 'title requestNo')
         .lean(),
     ]);
+
 
     res.status(200).json({
       success: true,
@@ -72,50 +73,41 @@ export const getStaffStats = async (req, res, next) => {
   try {
     const staffId = req.user._id;
 
-    const assignedProjects = await Project.countDocuments({
-      assignedStaff: staffId,
-    });
-    
-    const newAssignments = await Project.countDocuments({
-      assignedStaff: staffId,
-      status: 'assigned',
-    });
-
-    const pendingTasks = await Project.countDocuments({
-      assignedStaff: staffId,
-      status: { $in: ['not_started', 'assigned', 'in_progress', 'revision_required'] },
-    });
-
-    const waitingForReview = await Project.countDocuments({
-      assignedStaff: staffId,
-      status: 'under_review',
-    });
-
-    const completedTasks = await Project.countDocuments({
-      assignedStaff: staffId,
-      status: 'completed',
-    });
-
-    // Upcoming deadlines
-    const upcomingDeadlines = await Project.find({
-      status: { $nin: ['completed', 'cancelled'] },
-      deadline: { $gte: new Date() },
-    })
-      .sort({ deadline: 1 })
-      .limit(5)
-      .populate('client', 'fullName');
-
-    // Recent activities on assigned projects
-    const myProjectIds = await Project.find({ assignedStaff: staffId }).select('_id');
+    const myProjectIds = await Project.find({ assignedStaff: staffId }).select('_id').lean();
     const projectIds = myProjectIds.map((p) => p._id);
 
-    const recentActivity = await ActivityLog.find({
-      project: { $in: projectIds },
-    })
-      .sort({ createdAt: -1 })
-      .limit(8)
-      .populate('performedBy', 'fullName role')
-      .populate('project', 'projectName');
+    const [
+      assignedProjects,
+      newAssignments,
+      pendingTasks,
+      waitingForReview,
+      completedTasks,
+      upcomingDeadlines,
+      recentActivity,
+    ] = await Promise.all([
+      Project.countDocuments({ assignedStaff: staffId }),
+      Project.countDocuments({ assignedStaff: staffId, status: 'assigned' }),
+      Project.countDocuments({
+        assignedStaff: staffId,
+        status: { $in: ['not_started', 'assigned', 'in_progress', 'revision_required'] },
+      }),
+      Project.countDocuments({ assignedStaff: staffId, status: 'under_review' }),
+      Project.countDocuments({ assignedStaff: staffId, status: 'completed' }),
+      Project.find({
+        status: { $nin: ['completed', 'cancelled'] },
+        deadline: { $gte: new Date() },
+      })
+        .sort({ deadline: 1 })
+        .limit(5)
+        .populate('client', 'fullName')
+        .lean(),
+      ActivityLog.find({ project: { $in: projectIds } })
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .populate('performedBy', 'fullName role')
+        .populate('project', 'projectName')
+        .lean(),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -134,6 +126,7 @@ export const getStaffStats = async (req, res, next) => {
   }
 };
 
+
 // @desc    Get Client Dashboard Stats
 // @route   GET /api/dashboard/client
 // @access  Private/Client
@@ -141,54 +134,37 @@ export const getClientStats = async (req, res, next) => {
   try {
     const clientId = req.user._id;
 
-    const submittedRequests = await Request.countDocuments({ client: clientId });
-    
-    const activeProjects = await Project.countDocuments({
-      client: clientId,
-      status: { $nin: ['completed', 'cancelled'] },
-    });
+    const [myProjects, myRequests] = await Promise.all([
+      Project.find({ client: clientId }).select('_id').lean(),
+      Request.find({ client: clientId }).select('_id').lean(),
+    ]);
 
-    const completedProjects = await Project.countDocuments({
-      client: clientId,
-      status: 'completed',
-    });
-
-    const pendingResponses = await Request.countDocuments({
-      client: clientId,
-      status: 'under_review',
-    });
-
-    // Fetch projects
-    const myProjects = await Project.find({ client: clientId }).select('_id');
     const projectIds = myProjects.map((p) => p._id);
+    const requestIds = myRequests.map((r) => r._id);
 
-    // Unread chat messages for client's projects
-    const unreadMessages = await Message.countDocuments({
-      project: { $in: projectIds },
-      sender: { $ne: clientId },
-      isRead: false,
-    });
-
-    // Available files count
-    const totalFiles = await File.countDocuments({
-      $or: [
-        { project: { $in: projectIds } },
-        { request: { $in: await Request.find({ client: clientId }).select('_id') } },
-      ],
-    });
-
-    // Get recent activities related to client requests/projects
-    const recentActivity = await ActivityLog.find({
-      $or: [
-        { project: { $in: projectIds } },
-        { request: { $in: await Request.find({ client: clientId }).select('_id') } },
-      ],
-    })
-      .sort({ createdAt: -1 })
-      .limit(8)
-      .populate('performedBy', 'fullName role')
-      .populate('project', 'projectName')
-      .populate('request', 'title requestNo');
+    const [
+      submittedRequests,
+      activeProjects,
+      completedProjects,
+      pendingResponses,
+      unreadMessages,
+      totalFiles,
+      recentActivity,
+    ] = await Promise.all([
+      Request.countDocuments({ client: clientId }),
+      Project.countDocuments({ client: clientId, status: { $nin: ['completed', 'cancelled'] } }),
+      Project.countDocuments({ client: clientId, status: 'completed' }),
+      Request.countDocuments({ client: clientId, status: 'under_review' }),
+      Message.countDocuments({ project: { $in: projectIds }, sender: { $ne: clientId }, isRead: false }),
+      File.countDocuments({ $or: [{ project: { $in: projectIds } }, { request: { $in: requestIds } }] }),
+      ActivityLog.find({ $or: [{ project: { $in: projectIds } }, { request: { $in: requestIds } }] })
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .populate('performedBy', 'fullName role')
+        .populate('project', 'projectName')
+        .populate('request', 'title requestNo')
+        .lean(),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -206,3 +182,4 @@ export const getClientStats = async (req, res, next) => {
     next(error);
   }
 };
+
