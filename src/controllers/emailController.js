@@ -248,23 +248,141 @@ export const sendTestEmail = async (req, res, next) => {
 
     // Fetch company name for template
     const company = await CompanySettings.findOne();
-    const companyName = company?.companyName || 'Work Portal';
+    const companyName = company?.companyName || 'WODWES LLC';
+    const adminName = req.user?.fullName ? `Hello ${req.user.fullName},` : 'Hello Admin,';
+    const clientUrl = process.env.CLIENT_URL || 'https://client-hussnain5.vercel.app';
+    const adminPortalUrl = `${clientUrl}/admin`;
 
-    const subject = 'Email Configuration Test';
-    const textBody = `Hello,\n\nThis is a test email from your Work Portal.\n\nYour email configuration is working correctly.\n\nCompany:\n${companyName}\n\nRegards,\n${companyName}`;
+    const subject = 'Email Configuration Verified';
+    const textBody = `${adminName}\n\nYour email configuration has been successfully verified.\n\nYour application is now able to send:\n• Password Reset Emails\n• Verification Emails\n• System Notifications\n• Client Messages\n\n✅ Email service is configured successfully.\n\nOrganization:\n${companyName}\n\nOpen Admin Portal: ${adminPortalUrl}\n\nNeed assistance?\nContact our support team: support@wodwes.com\n\n© 2026 WODWES LLC. All Rights Reserved.`;
+
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <h2 style="color: #4f46e5; margin-bottom: 16px;">Email Configuration Test</h2>
-        <p>Hello,</p>
-        <p>This is a test email from your <strong>${companyName}</strong> portal.</p>
-        <div style="background-color: #f8fafc; padding: 16px; border-left: 4px solid #4f46e5; margin: 20px 0; border-radius: 4px;">
-          <p style="margin: 0; font-weight: bold; color: #16a34a;">✅ Your email configuration is working correctly.</p>
-        </div>
-        <p><strong>Company:</strong> ${companyName}</p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #64748b;">Regards,<br /><strong>${companyName}</strong></p>
-      </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Configuration Verified</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #090d16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #f1f5f9;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #090d16; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <!-- Container Card -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 560px; background-color: #131b2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);">
+          
+          <!-- Brand Header -->
+          <tr>
+            <td style="padding: 36px 36px 20px 36px; text-align: left;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">
+                    <span style="color: #a855f7;">WODWES</span> <span style="font-size: 13px; font-weight: 600; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase;">LLC</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 36px;">
+              <div style="border-top: 1px solid rgba(255, 255, 255, 0.08);"></div>
+            </td>
+          </tr>
+
+          <!-- Body Content -->
+          <tr>
+            <td style="padding: 32px 36px;">
+              <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.025em; line-height: 1.25;">
+                Email Configuration Verified
+              </h1>
+              
+              <p style="margin: 0 0 20px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
+                ${adminName}
+              </p>
+
+              <p style="margin: 0 0 20px 0; font-size: 15px; color: #cbd5e1; line-height: 1.6;">
+                Your email configuration has been successfully verified.
+              </p>
+
+              <!-- Supported Features List -->
+              <div style="margin: 0 0 28px 0; background-color: #1a233a; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 20px 24px;">
+                <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                  Your application is now able to send:
+                </p>
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr><td style="padding: 4px 0; font-size: 14px; color: #e2e8f0; font-weight: 500;">• Password Reset Emails</td></tr>
+                  <tr><td style="padding: 4px 0; font-size: 14px; color: #e2e8f0; font-weight: 500;">• Verification Emails</td></tr>
+                  <tr><td style="padding: 4px 0; font-size: 14px; color: #e2e8f0; font-weight: 500;">• System Notifications</td></tr>
+                  <tr><td style="padding: 4px 0; font-size: 14px; color: #e2e8f0; font-weight: 500;">• Client Messages</td></tr>
+                </table>
+              </div>
+
+              <!-- Modern Success Alert -->
+              <div style="margin: 0 0 28px 0; background-color: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 16px 20px;">
+                <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="font-size: 15px; font-weight: 600; color: #4ade80; line-height: 1.4;">
+                      ✅ Email service is configured successfully.
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Organization Info Card -->
+              <div style="margin: 0 0 32px 0; background-color: #1a233a; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 16px 20px;">
+                <p style="margin: 0 0 4px 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em;">
+                  Organization
+                </p>
+                <p style="margin: 0; font-size: 15px; font-weight: 700; color: #ffffff;">
+                  ${companyName}
+                </p>
+              </div>
+
+              <!-- Primary CTA Button -->
+              <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 0 8px 0;">
+                <tr>
+                  <td align="center" style="border-radius: 12px; background-color: #7c3aed;">
+                    <a href="${adminPortalUrl}" target="_blank" style="font-size: 15px; font-weight: 700; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; background-color: #7c3aed; border: 1px solid #8b5cf6;">
+                      Open Admin Portal &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Subtle Divider -->
+          <tr>
+            <td style="padding: 0 36px;">
+              <div style="border-top: 1px solid rgba(255, 255, 255, 0.08);"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 28px 36px 36px 36px; text-align: left;">
+              <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #94a3b8;">
+                Need assistance?
+              </p>
+              <p style="margin: 0 0 20px 0; font-size: 13px; color: #64748b;">
+                Contact our support team: <a href="mailto:support@wodwes.com" style="color: #a855f7; text-decoration: none; font-weight: 600;">support@wodwes.com</a>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #475569; font-weight: 500;">
+                © 2026 WODWES LLC. All Rights Reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
     `;
+
 
     await sendEmail({
       to: testEmailRecipient,
