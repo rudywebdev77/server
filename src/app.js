@@ -33,7 +33,7 @@ app.use(helmet({
   crossOriginResourcePolicy: false, // Allow loading local uploads
 }));
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://client-red-five-32.vercel.app'],
   credentials: true,
 }));
 app.use(cookieParser());
