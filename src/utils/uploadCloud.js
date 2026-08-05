@@ -13,7 +13,8 @@ if (process.env.CLOUDINARY_URL) {
 }
 
 /**
- * Uploads a file to Cloudinary if credentials exist, supporting both disk paths and memory buffers
+ * Uploads a file to Cloudinary if credentials exist.
+ * On serverless environments (Vercel) without Cloudinary, converts file to Base64 Data URI to prevent 404 EROFS errors.
  */
 export const uploadFileToCloud = async (file) => {
   if (!file) return '';
@@ -25,6 +26,7 @@ export const uploadFileToCloud = async (file) => {
       process.env.CLOUDINARY_API_SECRET)
   );
 
+  // 1. Try Cloudinary Upload if configured
   if (isCloudConfigured) {
     try {
       let resourceType = 'auto';
@@ -47,11 +49,11 @@ export const uploadFileToCloud = async (file) => {
 
         return result.secure_url;
       } else if (file.buffer) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           const stream = cloudinary.uploader.upload_stream(
             { folder: 'work_portal_uploads', resource_type: resourceType },
             (error, result) => {
-              if (error) return resolve(`/uploads/${file.filename || 'file'}`);
+              if (error || !result) return resolve('');
               resolve(result.secure_url);
             }
           );
@@ -63,6 +65,29 @@ export const uploadFileToCloud = async (file) => {
     }
   }
 
-  // Local URL fallback
+  // 2. Base64 Data URI fallback for serverless deployments (Vercel)
+  if (file.path && fs.existsSync(file.path)) {
+    try {
+      const fileBuffer = fs.readFileSync(file.path);
+      const mime = file.mimetype || 'image/jpeg';
+      const base64Data = fileBuffer.toString('base64');
+      const dataUri = `data:${mime};base64,${base64Data}`;
+
+      // Clean up temp file
+      try {
+        fs.unlinkSync(file.path);
+      } catch (unlinkErr) {}
+
+      return dataUri;
+    } catch (e) {
+      console.error('[Base64 Fallback Error]', e.message);
+    }
+  } else if (file.buffer) {
+    const mime = file.mimetype || 'image/jpeg';
+    const base64Data = file.buffer.toString('base64');
+    return `data:${mime};base64,${base64Data}`;
+  }
+
+  // 3. Default fallback
   return file.filename ? `/uploads/${file.filename}` : '';
 };
