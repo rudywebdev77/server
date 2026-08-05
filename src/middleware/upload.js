@@ -1,21 +1,29 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { UPLOAD_PATH } from '../config/env.js';
 
-// Setup storage options
+// Setup storage options with serverless /tmp fallback
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    if (!fs.existsSync(UPLOAD_PATH)) {
-      fs.mkdirSync(UPLOAD_PATH, { recursive: true });
+    let destPath = UPLOAD_PATH;
+    try {
+      if (!fs.existsSync(destPath)) {
+        fs.mkdirSync(destPath, { recursive: true });
+      }
+    } catch (e) {
+      // Fallback to OS temp directory on read-only serverless environments
+      destPath = os.tmpdir();
     }
-    cb(null, UPLOAD_PATH);
+    cb(null, destPath);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
+
 
 // File filter (Optional validation, can be customized depending on endpoint)
 const fileFilter = (req, file, cb) => {
