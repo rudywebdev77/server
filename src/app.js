@@ -51,9 +51,29 @@ app.use(helmet({
   crossOriginResourcePolicy: false, // Allow loading local uploads
 }));
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://client-red-five-32.vercel.app'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+    if (!origin) return callback(null, true);
+    
+    // Allowed origin list
+    const allowed = [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'https://client-red-five-32.vercel.app',
+      'https://client-hussnain5.vercel.app',
+      process.env.CLIENT_URL,
+    ].filter(Boolean);
+
+    if (allowed.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 }));
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
