@@ -106,69 +106,68 @@ export const sendMessage = async (req, res, next) => {
       { path: 'replyTo', populate: { path: 'sender', select: 'fullName role' } }
     ]);
 
-    await logActivity({
-      project: projectId,
-      action: 'message_sent',
-      performedBy: req.user._id,
-      role: req.user.role,
-      description: `${req.user.fullName} sent a message on the project`,
-    });
-
-    // Notify ALL project members (admins, client, creator, assigned staff) except the sender
-    try {
-      const project = await Project.findById(projectId).select('client assignedStaff createdBy').lean();
-      if (project) {
-        const senderId = String(req.user._id);
-
-        // Fetch all admins so admins are always notified of project messages
-        const User = (await import('../models/User.js')).default;
-        const admins = await User.find({ role: 'admin' }).select('_id').lean();
-        const adminIds = admins.map((a) => String(a._id));
-
-        const memberIds = [
-          ...adminIds,
-          ...(project.client ? [String(project.client._id || project.client)] : []),
-          ...(project.createdBy ? [String(project.createdBy._id || project.createdBy)] : []),
-          ...(project.assignedStaff || []).map((id) => String(id._id || id)),
-        ];
-        const uniqueRecipients = [...new Set(memberIds)].filter((id) => id !== senderId);
-
-        console.log(`[sendMessage] Notifying ${uniqueRecipients.length} recipient(s) for project ${projectId}`);
-
-        for (const recipientId of uniqueRecipients) {
-          let roleLink = `/admin/projects/${projectId}`;
-          if (project.client && String(recipientId) === String(project.client)) {
-            roleLink = `/client/projects/${projectId}`;
-          } else {
-            const recipientUser = await User.findById(recipientId).select('role').lean();
-            if (recipientUser?.role === 'staff') {
-              roleLink = `/staff/projects/${projectId}`;
-            } else if (recipientUser?.role === 'client') {
-              roleLink = `/client/projects/${projectId}`;
-            }
-          }
-
-          await createNotification({
-            user: recipientId,
-            title: 'New Message',
-            message: `${req.user.fullName} sent a message`,
-            type: 'chat',
-            link: roleLink,
-            projectId,
-          });
-        }
-      }
-    } catch (notifErr) {
-      console.error('[sendMessage] Failed to send chat notifications:', notifErr.message);
-    }
-
-    // Broadcast message via WebSocket to all clients in project room
+    // Broadcast message via WebSocket to all clients in project room instantly
     broadcastToProject(projectId, {
       type: 'message',
       data: populated,
     });
 
     res.status(201).json({ success: true, message: populated });
+
+    // Asynchronous background activity logging and notification dispatch (non-blocking for ⚡ instant response)
+    setImmediate(async () => {
+      try {
+        logActivity({
+          project: projectId,
+          action: 'message_sent',
+          performedBy: req.user._id,
+          role: req.user.role,
+          description: `${req.user.fullName} sent a message on the project`,
+        }).catch(() => {});
+
+        const project = await Project.findById(projectId).select('client assignedStaff createdBy').lean();
+        if (project) {
+          const senderId = String(req.user._id);
+          const User = (await import('../models/User.js')).default;
+          const admins = await User.find({ role: 'admin' }).select('_id').lean();
+          const adminIds = admins.map((a) => String(a._id));
+
+          const memberIds = [
+            ...adminIds,
+            ...(project.client ? [String(project.client._id || project.client)] : []),
+            ...(project.createdBy ? [String(project.createdBy._id || project.createdBy)] : []),
+            ...(project.assignedStaff || []).map((id) => String(id._id || id)),
+          ];
+          const uniqueRecipients = [...new Set(memberIds)].filter((id) => id !== senderId);
+
+          for (const recipientId of uniqueRecipients) {
+            let roleLink = `/admin/projects/${projectId}`;
+            if (project.client && String(recipientId) === String(project.client)) {
+              roleLink = `/client/projects/${projectId}`;
+            } else {
+              const recipientUser = await User.findById(recipientId).select('role').lean();
+              if (recipientUser?.role === 'staff') {
+                roleLink = `/staff/projects/${projectId}`;
+              } else if (recipientUser?.role === 'client') {
+                roleLink = `/client/projects/${projectId}`;
+              }
+            }
+
+            createNotification({
+              user: recipientId,
+              title: 'New Message',
+              message: `${req.user.fullName} sent a message`,
+              type: 'chat',
+              link: roleLink,
+              projectId,
+            }).catch(() => {});
+          }
+        }
+      } catch (notifErr) {
+        console.error('[sendMessage Async Notif] Error:', notifErr.message);
+      }
+    });
+
   } catch (error) {
     console.error('Error in sendMessage controller:', error);
     res.status(500).json({

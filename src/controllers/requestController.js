@@ -52,34 +52,40 @@ export const createRequest = async (req, res, next) => {
       await request.save();
     }
 
-    // Log Activity
-    await logActivity({
-      request: request._id,
-      action: 'request_created',
-      newValue: 'new',
-      performedBy: req.user._id,
-      role: req.user.role,
-      description: `Client submitted a new work request: ${requestNo}`,
-      attachments: fileIds,
-    });
-
-    // Notify Admins
-    const admins = await User.find({ role: 'admin' });
-    for (const admin of admins) {
-      await createNotification({
-        user: admin._id,
-        title: 'New Client Request',
-        message: `Client ${req.user.fullName} submitted a request: ${requestNo}`,
-        type: 'request',
-        link: `/admin/requests`,
-      });
-    }
-
     res.status(201).json({
       success: true,
       message: 'Request submitted successfully',
       request,
     });
+
+    // Background activity logging and notification dispatch (non-blocking for ⚡ instant response)
+    setImmediate(async () => {
+      try {
+        logActivity({
+          request: request._id,
+          action: 'request_created',
+          newValue: 'new',
+          performedBy: req.user._id,
+          role: req.user.role,
+          description: `Client submitted a new work request: ${requestNo}`,
+          attachments: fileIds,
+        }).catch(() => {});
+
+        const admins = await User.find({ role: 'admin' }).select('_id').lean();
+        for (const admin of admins) {
+          createNotification({
+            user: admin._id,
+            title: 'New Client Request',
+            message: `Client ${req.user.fullName} submitted a request: ${requestNo}`,
+            type: 'request',
+            link: `/admin/requests`,
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.error('[createRequest Async Notif] Error:', err.message);
+      }
+    });
+
   } catch (error) {
     next(error);
   }
