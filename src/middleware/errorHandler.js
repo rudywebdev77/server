@@ -3,8 +3,8 @@ export const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log to console for developer
-  console.error(err);
+  // Log to console for server debugging
+  console.error('[SERVER ERROR]', err);
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
@@ -24,9 +24,19 @@ export const errorHandler = (err, req, res, next) => {
     error = { message, statusCode: 400 };
   }
 
-  res.status(error.statusCode || err.statusCode || 500).json({
+  // Ensure Access-Control-Allow-Origin header is present on error responses
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+
+  const statusCode = error.statusCode || err.statusCode || 500;
+
+  res.status(statusCode).json({
     success: false,
     message: error.message || 'Server Error',
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 };
+

@@ -29,33 +29,15 @@ import { connectDB } from './config/db.js';
 
 const app = express();
 
-// Enable Trust Proxy for rate limiting behind reverse proxies (Vercel/Heroku/Nginx)
+// Trust Proxy for Vercel / Heroku / Reverse proxies
 app.set('trust proxy', 1);
 
-// Middleware to ensure DB connection is established (Required for Vercel Serverless Functions)
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (err) {
-    console.error('Database connection error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Database connection failed. Please check MONGO_URI environment variable.',
-    });
-  }
-});
-
-// Security Middlewares
-app.use(helmet({
-  crossOriginResourcePolicy: false, // Allow loading local uploads
-}));
-app.use(cors({
+// CORS options definition
+const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, or server-to-server)
     if (!origin) return callback(null, true);
-    
-    // Allowed origin list
+
     const allowed = [
       'http://localhost:5173',
       'http://127.0.0.1:5173',
@@ -72,14 +54,22 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-}));
+  optionsSuccessStatus: 200,
+};
 
+// 1. Enable CORS first on all routes & preflight OPTIONS requests
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// 2. Security & Parser Middlewares
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}));
 app.use(cookieParser());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 // Automatic activity logging — fires after successful responses
 app.use(activityLoggerMiddleware);
+
 
 
 // Simple XSS Clean middleware (custom replacement for deprecated xss-clean if necessary, or just basic sanitization)

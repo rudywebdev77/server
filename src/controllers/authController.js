@@ -56,11 +56,19 @@ export const login = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please provide an email and password' });
     }
 
+    // Check count and seed only if database has 0 users
+    const count = await User.countDocuments();
+    if (count === 0) {
+      const { seedDatabase } = await import('../utils/seed.js');
+      await seedDatabase();
+    }
+
     // Check for user
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
+
 
     // Check if status is active
     if (user.status === 'deactivated' || user.status === 'inactive') {

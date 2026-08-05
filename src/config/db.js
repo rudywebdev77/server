@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { MONGO_URI } from './env.js';
-import { seedDatabase } from '../utils/seed.js';
 
 let cached = global.mongoose;
 
@@ -19,17 +18,12 @@ export const connectDB = async () => {
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: false, // Turn off buffering to prevent 10s timeout errors on serverless
+      bufferCommands: false,
       serverSelectionTimeoutMS: 5000,
     };
 
-    cached.promise = mongoose.connect(MONGO_URI, opts).then(async (m) => {
+    cached.promise = mongoose.connect(MONGO_URI, opts).then((m) => {
       console.log(`MongoDB Connected: ${m.connection.host}`);
-      try {
-        await seedDatabase();
-      } catch (seedErr) {
-        console.error('Auto seed database error:', seedErr);
-      }
       return m;
     });
   }
@@ -44,6 +38,7 @@ export const connectDB = async () => {
 
   return cached.conn;
 };
+
 
 
 
