@@ -4,6 +4,7 @@ import Project from '../models/Project.js';
 import { logActivity } from '../utils/logActivity.js';
 import { createNotification } from '../utils/createNotification.js';
 import { broadcastToProject } from '../websocket/websocket.js';
+import { uploadFileToCloud } from '../utils/uploadCloud.js';
 
 // @desc    Send message
 export const sendMessage = async (req, res, next) => {
@@ -29,12 +30,14 @@ export const sendMessage = async (req, res, next) => {
 
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
+        const cloudUrl = await uploadFileToCloud(file);
+
         const fileDoc = await File.create({
           project: projectId,
           uploadedBy: req.user._id,
           fileName: file.filename,
           originalName: file.originalname,
-          filePath: `/uploads/${file.filename}`,
+          filePath: cloudUrl,
           fileType: file.mimetype,
           size: file.size,
         });
@@ -59,17 +62,18 @@ export const sendMessage = async (req, res, next) => {
         else if (isZip) type = 'zip';
 
         if (!attachmentPath) {
-          attachmentPath = `/uploads/${file.filename}`;
+          attachmentPath = cloudUrl;
           attachmentName = file.originalname;
           attachmentType = type;
           attachmentSize = file.size;
           mimeType = file.mimetype;
           if (isAudio) {
-            voiceUrl = `/uploads/${file.filename}`;
+            voiceUrl = cloudUrl;
           }
         }
       }
     }
+
 
     // Validation: Reject only when BOTH message text AND files/audio are empty
     if (!message?.trim() && attachmentIds.length === 0 && !voiceUrl) {
