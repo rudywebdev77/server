@@ -306,19 +306,6 @@ export const sendTestEmail = async (req, res, next) => {
                 Your email configuration has been successfully verified.
               </p>
 
-              <!-- Supported Features List -->
-              <div style="margin: 0 0 28px 0; background-color: #1a233a; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 20px 24px;">
-                <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
-                  Your application is now able to send:
-                </p>
-                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
-                  <tr><td style="padding: 4px 0; font-size: 14px; color: #e2e8f0; font-weight: 500;">• Password Reset Emails</td></tr>
-                  <tr><td style="padding: 4px 0; font-size: 14px; color: #e2e8f0; font-weight: 500;">• Verification Emails</td></tr>
-                  <tr><td style="padding: 4px 0; font-size: 14px; color: #e2e8f0; font-weight: 500;">• System Notifications</td></tr>
-                  <tr><td style="padding: 4px 0; font-size: 14px; color: #e2e8f0; font-weight: 500;">• Client Messages</td></tr>
-                </table>
-              </div>
-
               <!-- Modern Success Alert -->
               <div style="margin: 0 0 28px 0; background-color: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 16px 20px;">
                 <table role="presentation" border="0" cellspacing="0" cellpadding="0">
@@ -331,7 +318,7 @@ export const sendTestEmail = async (req, res, next) => {
               </div>
 
               <!-- Organization Info Card -->
-              <div style="margin: 0 0 32px 0; background-color: #1a233a; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 16px 20px;">
+              <div style="margin: 0; background-color: #1a233a; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 16px 20px;">
                 <p style="margin: 0 0 4px 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em;">
                   Organization
                 </p>
@@ -339,19 +326,9 @@ export const sendTestEmail = async (req, res, next) => {
                   ${companyName}
                 </p>
               </div>
-
-              <!-- Primary CTA Button -->
-              <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 0 8px 0;">
-                <tr>
-                  <td align="center" style="border-radius: 12px; background-color: #7c3aed;">
-                    <a href="${adminPortalUrl}" target="_blank" style="font-size: 15px; font-weight: 700; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; background-color: #7c3aed; border: 1px solid #8b5cf6;">
-                      Open Admin Portal &rarr;
-                    </a>
-                  </td>
-                </tr>
-              </table>
             </td>
           </tr>
+
 
           <!-- Subtle Divider -->
           <tr>
