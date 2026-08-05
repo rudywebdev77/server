@@ -3,40 +3,47 @@ import Request from '../models/Request.js';
 import Project from '../models/Project.js';
 import File from '../models/File.js';
 import Message from '../models/Message.js';
-import ActivityLog from '../models/ActivityLog.js';
+import Activity from '../models/Activity.js';
 
 // @desc    Get Admin Dashboard Stats
 // @route   GET /api/dashboard/admin
 // @access  Private/Admin
 export const getAdminStats = async (req, res, next) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalClients = await User.countDocuments({ role: 'client' });
-    const totalStaff = await User.countDocuments({ role: 'staff' });
-    
-    const newRequests = await Request.countDocuments({ status: 'new' });
-    const activeProjects = await Project.countDocuments({
-      status: { $nin: ['completed', 'cancelled'] },
-    });
-    const completedProjects = await Project.countDocuments({ status: 'completed' });
-    const pendingReviews = await Project.countDocuments({ status: 'under_review' });
-
-    // Upcoming deadlines
-    const upcomingDeadlines = await Project.find({
-      status: { $nin: ['completed', 'cancelled'] },
-      deadline: { $gte: new Date() },
-    })
-      .sort({ deadline: 1 })
-      .limit(5)
-      .populate('client', 'fullName');
-
-    // Recent activity logs
-    const recentActivity = await ActivityLog.find()
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .populate('performedBy', 'fullName role')
-      .populate('project', 'projectName')
-      .populate('request', 'title requestNo');
+    const [
+      totalUsers,
+      totalClients,
+      totalStaff,
+      newRequests,
+      activeProjects,
+      completedProjects,
+      pendingReviews,
+      upcomingDeadlines,
+      recentActivity,
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ role: 'client' }),
+      User.countDocuments({ role: 'staff' }),
+      Request.countDocuments({ status: 'new' }),
+      Project.countDocuments({ status: { $nin: ['completed', 'cancelled'] } }),
+      Project.countDocuments({ status: 'completed' }),
+      Project.countDocuments({ status: 'under_review' }),
+      Project.find({
+        status: { $nin: ['completed', 'cancelled'] },
+        deadline: { $gte: new Date() },
+      })
+        .sort({ deadline: 1 })
+        .limit(5)
+        .populate('client', 'fullName')
+        .lean(),
+      Activity.find()
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .populate('user_id', 'fullName role')
+        .populate('project', 'projectName')
+        .populate('request', 'title requestNo')
+        .lean(),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -56,6 +63,7 @@ export const getAdminStats = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // @desc    Get Staff Dashboard Stats
 // @route   GET /api/dashboard/staff

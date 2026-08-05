@@ -118,13 +118,17 @@ export const getRequests = async (req, res, next) => {
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    const total = await Request.countDocuments(query);
-    const requests = await Request.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limitNum)
-      .populate('client', 'fullName email')
-      .populate('files');
+    const [total, requests] = await Promise.all([
+      Request.countDocuments(query),
+      Request.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .populate('client', 'fullName email')
+        .populate('files')
+        .lean(),
+    ]);
+
 
     res.status(200).json({
       success: true,
