@@ -51,65 +51,46 @@ export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    console.log(`[LOGIN ATTEMPT] Email received: ${email}`);
-
     // Validate email & password
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Please provide an email and password' });
     }
 
-    // Auto-seed if database is empty
-
-    try {
-      const count = await User.countDocuments();
-      if (count === 0) {
-        console.log('[LOGIN] Database empty. Auto-seeding initial users...');
-        const { seedDatabase } = await import('../utils/seed.js');
-        await seedDatabase();
-      }
-    } catch (seedErr) {
-      console.warn('[LOGIN] Auto-seed non-fatal warning:', seedErr.message);
+    // Check count and seed only if database has 0 users
+    const count = await User.countDocuments();
+    if (count === 0) {
+      const { seedDatabase } = await import('../utils/seed.js');
+      await seedDatabase();
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
-
     // Check for user
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      console.warn(`[LOGIN FAILED] User not found: ${normalizedEmail}`);
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+
     // Check if status is active
     if (user.status === 'deactivated' || user.status === 'inactive') {
-      console.warn(`[LOGIN FAILED] Account inactive: ${normalizedEmail}`);
       return res.status(403).json({ success: false, message: 'Account is inactive or deactivated' });
     }
 
     // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      console.warn(`[LOGIN FAILED] Password mismatch: ${normalizedEmail}`);
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Update lastLogin timestamp without triggering full schema validation
+    // Update lastLogin timestamp
     user.lastLogin = new Date();
-    await user.save({ validateBeforeSave: false });
-
-    console.log(`[LOGIN SUCCESS] User authenticated: ${normalizedEmail} (${user.role})`);
+    await user.save();
 
     // Send token response
     await sendTokenResponse(user, 200, res);
   } catch (error) {
-    console.error('[LOGIN FATAL ERROR]', error.stack || error.message || error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Login failed due to an internal server error. Please try again.',
-    });
+    next(error);
   }
 };
-
 
 // @desc    Logout user & clear cookie
 // @route   POST /api/auth/logout
@@ -117,7 +98,7 @@ export const login = async (req, res, next) => {
 export const logout = async (req, res, next) => {
   try {
     const token = req.cookies.refreshToken;
-    
+
     if (token) {
       const decoded = jwt.decode(token);
       if (decoded && decoded.id) {

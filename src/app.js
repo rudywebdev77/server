@@ -25,9 +25,9 @@ import clientSettingsRoutes from './routes/clientSettingsRoutes.js';
 import staffSettingsRoutes from './routes/staffSettingsRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
+import { connectDB } from './config/db.js';
 
 const app = express();
-
 
 // Trust Proxy for Vercel / Heroku / Reverse proxies
 app.set('trust proxy', 1);
@@ -67,8 +67,25 @@ app.use(helmet({
 }));
 app.use(cookieParser());
 app.use(express.json());
+
+// Middleware to ensure DB connection is ready for API requests
+app.use(async (req, res, next) => {
+  if (req.path === '/health' || req.path === '/api/db-status') return next();
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('[DB CONNECT MIDDLEWARE ERROR]', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Database connection failed. Please check MONGO_URI environment variable on server.',
+    });
+  }
+});
+
 // Automatic activity logging — fires after successful responses
 app.use(activityLoggerMiddleware);
+
 
 
 

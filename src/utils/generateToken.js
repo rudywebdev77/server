@@ -14,43 +14,36 @@ export const generateRefreshToken = (userId) => {
 };
 
 export const sendTokenResponse = async (user, statusCode, res) => {
-  try {
-    // Generate tokens
-    const accessToken = generateAccessToken(user._id, user.role);
-    const refreshToken = generateRefreshToken(user._id);
+  // Generate tokens
+  const accessToken = generateAccessToken(user._id, user.role);
+  const refreshToken = generateRefreshToken(user._id);
 
-    // Save refresh token to user document without triggering schema validation
-    user.refreshToken = refreshToken;
-    await user.save({ validateBeforeSave: false });
+  // Save refresh token to user document
+  user.refreshToken = refreshToken;
+  await user.save();
 
-    // Determine cookie expire time (7 days matches default JWT_REFRESH_EXPIRE)
-    const isProduction = process.env.NODE_ENV === 'production';
-    const options = {
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-    };
+  // Determine cookie expire time (7 days matches default JWT_REFRESH_EXPIRE)
+  const options = {
+    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  };
 
-    res
-      .status(statusCode)
-      .cookie('refreshToken', refreshToken, options)
-      .json({
-        success: true,
-        accessToken,
-        user: {
-          id: user._id,
-          fullName: user.fullName,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          profileImage: user.profileImage,
-          status: user.status,
-        },
-      });
-  } catch (err) {
-    console.error('[sendTokenResponse FATAL ERROR]', err);
-    throw err;
-  }
+  res
+    .status(statusCode)
+    .cookie('refreshToken', refreshToken, options)
+    .json({
+      success: true,
+      accessToken,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        profileImage: user.profileImage,
+        status: user.status,
+      },
+    });
 };
-

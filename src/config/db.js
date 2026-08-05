@@ -2,12 +2,16 @@ import mongoose from 'mongoose';
 import dns from 'node:dns';
 import { MONGO_URI } from './env.js';
 
+// Globally disable command buffering so Mongoose never hangs 10s if disconnected
+mongoose.set('bufferCommands', false);
+
 // Pre-configure DNS order for Node.js DNS lookups
 try {
   if (dns.setDefaultResultOrder) {
     dns.setDefaultResultOrder('ipv4first');
   }
 } catch (e) {}
+
 
 let cached = global.mongoose;
 
