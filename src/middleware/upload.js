@@ -12,8 +12,10 @@ const storage = multer.diskStorage({
       if (!fs.existsSync(destPath)) {
         fs.mkdirSync(destPath, { recursive: true });
       }
+      // Strictly test write permissions on the directory
+      fs.accessSync(destPath, fs.constants.W_OK);
     } catch (e) {
-      // Fallback to OS temp directory on read-only serverless environments
+      // Fallback to OS temp directory (/tmp) which is guaranteed writable on Vercel/Lambda
       destPath = os.tmpdir();
     }
     cb(null, destPath);
@@ -23,6 +25,7 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
+
 
 
 // File filter (Optional validation, can be customized depending on endpoint)
