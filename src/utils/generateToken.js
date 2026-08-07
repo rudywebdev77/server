@@ -22,13 +22,17 @@ export const sendTokenResponse = async (user, statusCode, res) => {
   user.refreshToken = refreshToken;
   await user.save();
 
-  // Determine cookie expire time (7 days matches default JWT_REFRESH_EXPIRE)
-  const isProd = process.env.NODE_ENV === 'production';
+  // Determine cookie settings dynamically based on request context (support localhost and production proxies)
+  const host = res.req.headers.host || '';
+  const isSecure = res.req.secure || 
+                   res.req.headers['x-forwarded-proto'] === 'https' || 
+                   host.includes('localhost') || 
+                   host.includes('127.0.0.1');
   const options = {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
+    secure: isSecure,
+    sameSite: isSecure ? 'none' : 'lax',
   };
 
   res

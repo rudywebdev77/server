@@ -143,12 +143,16 @@ export const logout = async (req, res, next) => {
       }
     }
 
-    const isProd = process.env.NODE_ENV === 'production';
+    const host = req.headers.host || '';
+    const isSecure = req.secure || 
+                     req.headers['x-forwarded-proto'] === 'https' || 
+                     host.includes('localhost') || 
+                     host.includes('127.0.0.1');
     res.cookie('refreshToken', 'none', {
       expires: new Date(Date.now() + 10 * 1000),
       httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'none' : 'lax',
+      secure: isSecure,
+      sameSite: isSecure ? 'none' : 'lax',
     });
 
     res.status(200).json({
