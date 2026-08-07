@@ -44,6 +44,43 @@ export const register = async (req, res, next) => {
   }
 };
 
+// @desc    Signup a new client user
+// @route   POST /api/auth/signup
+// @access  Public
+export const signup = async (req, res, next) => {
+  try {
+    const { fullName, email, phone, password } = req.body;
+
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Please provide full name, email, and password' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const userExists = await User.findOne({ email: cleanEmail });
+    if (userExists) {
+      return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+    }
+
+    const user = await User.create({
+      fullName,
+      email: cleanEmail,
+      phone: phone || '',
+      password,
+      role: 'client',
+      status: 'active',
+    });
+
+    await sendTokenResponse(user, 201, res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public

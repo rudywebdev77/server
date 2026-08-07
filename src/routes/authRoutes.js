@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   register,
+  signup,
   login,
   logout,
   refreshToken,
@@ -16,6 +17,7 @@ import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
+router.post('/signup', signup);
 router.post('/login', login);
 router.post('/logout', logout);
 router.post('/forgot-password', forgotPassword);
