@@ -85,4 +85,10 @@ const ProjectSchema = new mongoose.Schema(
   }
 );
 
+// Performance Indexes
+ProjectSchema.index({ client: 1, status: 1 });
+ProjectSchema.index({ assignedStaff: 1, status: 1 });
+ProjectSchema.index({ status: 1, deadline: 1 });
+ProjectSchema.index({ createdAt: -1 });
+
 export default mongoose.model('Project', ProjectSchema);

@@ -73,4 +73,8 @@ const RequestSchema = new mongoose.Schema(
   }
 );
 
+// Performance Indexes
+RequestSchema.index({ client: 1, status: 1 });
+RequestSchema.index({ status: 1, createdAt: -1 });
+
 export default mongoose.model('Request', RequestSchema);

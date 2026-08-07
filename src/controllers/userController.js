@@ -35,11 +35,14 @@ export const getUsers = async (req, res, next) => {
     const limitNum = parseInt(limit) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    const total = await User.countDocuments(query);
-    const users = await User.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limitNum);
+    const [total, users] = await Promise.all([
+      User.countDocuments(query),
+      User.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -61,7 +64,7 @@ export const getUsers = async (req, res, next) => {
 // @access  Private/Admin
 export const getUser = async (req, res, next) => {
   try {
-    const user = await User.findOne({ _id: req.params.id, role: { $ne: 'admin' } });
+    const user = await User.findOne({ _id: req.params.id, role: { $ne: 'admin' } }).lean();
 
     if (!user) {
       return res.status(404).json({

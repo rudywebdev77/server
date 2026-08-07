@@ -168,24 +168,17 @@ export const initWebSocketServer = (httpServer) => {
 export const broadcastToProject = (projectId, payload, excludeUserId = null) => {
   const jsonStr = JSON.stringify(payload);
   const projectIdStr = String(projectId);
-  let sentCount = 0;
 
-  console.log(`[broadcastToProject] Broadcasting type '${payload.type}' to project: ${projectIdStr} | Total connected users: ${connectedClients.size}`);
   for (const [uid, sockets] of connectedClients.entries()) {
     if (excludeUserId && uid === String(excludeUserId)) {
-      console.log(`  -> Skipping excluded user: ${uid}`);
       continue;
     }
     for (const ws of sockets) {
-      console.log(`  Client: ${uid} | currentProjectId: ${ws.currentProjectId} | readyState: ${ws.readyState}`);
       if (ws.currentProjectId === projectIdStr && ws.readyState === 1) {
         ws.send(jsonStr);
-        sentCount++;
-        console.log(`  -> Sent to socket for user: ${uid}`);
       }
     }
   }
-  console.log(`[broadcastToProject] Done. Sent to ${sentCount} client socket(s).`);
 };
 
 /**

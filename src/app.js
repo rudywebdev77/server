@@ -64,7 +64,14 @@ app.options('*', cors(corsOptions));
 import compression from 'compression';
 
 // 2. Security & Parser Middlewares
-app.use(compression());
+app.use(compression({
+  level: 6,
+  threshold: 512,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  },
+}));
 app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
@@ -129,9 +136,15 @@ import mongoose from 'mongoose';
 
 import os from 'os';
 
-// Serve uploaded files statically (both local UPLOAD_PATH and serverless os.tmpdir())
-app.use('/uploads', express.static(UPLOAD_PATH));
-app.use('/uploads', express.static(os.tmpdir()));
+// Serve uploaded files statically with long-term caching
+const staticOptions = {
+  maxAge: '7d',
+  etag: true,
+  lastModified: true,
+};
+
+app.use('/uploads', express.static(UPLOAD_PATH, staticOptions));
+app.use('/uploads', express.static(os.tmpdir(), staticOptions));
 
 
 // Basic health check route

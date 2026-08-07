@@ -26,8 +26,8 @@ export const protect = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Get user from DB and attach to request
-    req.user = await User.findById(decoded.id);
+    // Get user from DB with lean projection to minimize query latency
+    req.user = await User.findById(decoded.id).select('_id fullName email role status profileImage').lean();
 
     if (!req.user) {
       return res.status(401).json({

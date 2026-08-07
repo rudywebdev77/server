@@ -158,7 +158,8 @@ export const getRequest = async (req, res, next) => {
   try {
     const request = await Request.findById(req.params.id)
       .populate('client', 'fullName email phone')
-      .populate('files');
+      .populate('files')
+      .lean();
 
     if (!request) {
       return res.status(404).json({ success: false, message: 'Request not found' });

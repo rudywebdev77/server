@@ -160,7 +160,8 @@ export const getProject = async (req, res, next) => {
       .populate('assignedStaff', 'fullName email profileImage')
       .populate('request', 'title requestNo status')
       .populate('referenceFiles')
-      .populate('createdBy', 'fullName');
+      .populate('createdBy', 'fullName')
+      .lean();
 
     if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
 

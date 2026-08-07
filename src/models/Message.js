@@ -117,6 +117,7 @@ const MessageSchema = new mongoose.Schema(
 
 MessageSchema.index({ project: 1, createdAt: 1 });
 MessageSchema.index({ sender: 1, createdAt: -1 });
+MessageSchema.index({ project: 1, sender: 1, isRead: 1 });
 
 export default mongoose.model('Message', MessageSchema);
 
