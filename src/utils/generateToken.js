@@ -23,11 +23,12 @@ export const sendTokenResponse = async (user, statusCode, res) => {
   await user.save();
 
   // Determine cookie expire time (7 days matches default JWT_REFRESH_EXPIRE)
+  const isProd = process.env.NODE_ENV === 'production';
   const options = {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
   };
 
   res
