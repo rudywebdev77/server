@@ -27,14 +27,17 @@ export const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     // Get user from DB with lean projection to minimize query latency
-    req.user = await User.findById(decoded.id).select('_id fullName email role status profileImage').lean();
+    const user = await User.findById(decoded.id).select('_id fullName email role status profileImage').lean();
 
-    if (!req.user) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'No user found with this id.',
       });
     }
+
+    user.id = user._id.toString();
+    req.user = user;
 
     if (req.user.status === 'deactivated' || req.user.status === 'inactive') {
       return res.status(403).json({
