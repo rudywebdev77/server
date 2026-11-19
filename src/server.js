@@ -16,9 +16,12 @@ const server = app.listen(PORT, () => {
 // Initialize WebSocket Server
 initWebSocketServer(server);
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err, promise) => {
-  console.log(`Unhandled Rejection Error: ${err.message}`);
-  // Close server & exit process
-  server.close(() => process.exit(1));
+// Handle unhandled promise rejections without crashing the server
+process.on('unhandledRejection', (err) => {
+  console.error('[UNHANDLED REJECTION]', err?.stack || err?.message || err);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err?.stack || err?.message || err);
 });
