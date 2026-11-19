@@ -100,8 +100,10 @@ export const login = async (req, res, next) => {
       await seedDatabase();
     }
 
+    const cleanEmail = email ? email.toLowerCase().trim() : '';
+
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: cleanEmail }).select('+password');
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
