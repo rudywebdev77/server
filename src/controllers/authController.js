@@ -145,16 +145,12 @@ export const logout = async (req, res, next) => {
       }
     }
 
-    const host = req.headers.host || '';
-    const isSecure = req.secure || 
-                     req.headers['x-forwarded-proto'] === 'https' || 
-                     host.includes('localhost') || 
-                     host.includes('127.0.0.1');
+    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
     res.cookie('refreshToken', 'none', {
       expires: new Date(Date.now() + 10 * 1000),
       httpOnly: true,
-      secure: isSecure,
-      sameSite: isSecure ? 'none' : 'lax',
+      secure: isHttps,
+      sameSite: isHttps ? 'none' : 'lax',
     });
 
     res.status(200).json({

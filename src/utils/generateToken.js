@@ -22,17 +22,13 @@ export const sendTokenResponse = async (user, statusCode, res) => {
   user.refreshToken = refreshToken;
   await user.save();
 
-  // Determine cookie settings dynamically based on request context (support localhost and production proxies)
-  const host = res.req.headers.host || '';
-  const isSecure = res.req.secure || 
-                   res.req.headers['x-forwarded-proto'] === 'https' || 
-                   host.includes('localhost') || 
-                   host.includes('127.0.0.1');
+  // Determine cookie settings dynamically: true HTTPS/production needs sameSite none + secure; localhost HTTP needs sameSite lax + secure false
+  const isHttps = res.req.secure || res.req.headers['x-forwarded-proto'] === 'https';
   const options = {
-    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    secure: isSecure,
-    sameSite: isSecure ? 'none' : 'lax',
+    secure: isHttps,
+    sameSite: isHttps ? 'none' : 'lax',
   };
 
   res
